@@ -10,13 +10,13 @@ type Argp struct {
 	Origin []string
 }
 
-// Equal sign
+// Eq equal sign
 var Eq = "="
 
-// Attach sign
+// At attach sign
 var At = "--"
 
-// Set the Args and Origin from Origin and return the Argp setted
+// From set the Args and Origin from Origin and return the Argp
 func From(Origin []string) *Argp {
 	return &Argp{
 		Args:   Origin,
@@ -24,14 +24,14 @@ func From(Origin []string) *Argp {
 	}
 }
 
-// Set the Args and Origin from os.Args and return the Argp setted
+// New set the Args and Origin from os.Args and return the Argp
 func New() *Argp {
 	init := From(os.Args[1:])
 	init.Short("-")
 	return init
 }
 
-// Separate short parameters into additional parameter lists based on short
+// Short separate short parameters into additional parameter lists based on short
 func (X *Argp) Short(short string) *Argp {
 	for i, v := range X.Args {
 		if strings.HasPrefix(v, short) && len(v) > len(short)+1 && v[len(short)] != short[0] {
@@ -44,7 +44,7 @@ func (X *Argp) Short(short string) *Argp {
 	return X
 }
 
-// Query finds in the Args and return it's existence
+// Bool query finds in the Args and returns its existence
 func (X *Argp) Bool(finds ...string) bool {
 	for _, find := range finds {
 		for i, v := range X.Args {
@@ -57,14 +57,17 @@ func (X *Argp) Bool(finds ...string) bool {
 	return false
 }
 
-// Query finds in the Args and set the exist result to value
+// BoolVar query finds in the Args and sets the exist result to value
 func (X *Argp) BoolVar(value *bool, finds ...string) {
 	for _, find := range finds {
 		*value = X.Bool(find)
+		if *value {
+			return
+		}
 	}
 }
 
-// Query finds in the Args and return the result and true or "" and false
+// String query finds in the Args and returns the result and true or "" and false
 func (X *Argp) String(finds ...string) (value string, exist bool) {
 	for _, find := range finds {
 		for i, v := range X.Args {
@@ -87,17 +90,18 @@ func (X *Argp) String(finds ...string) (value string, exist bool) {
 	return "", false
 }
 
-// Query finds in the Args and set the parsed result to value
+// StringVar query finds in the Args and set the parsed result to value
 func (X *Argp) StringVar(value *string, finds ...string) {
 	for _, find := range finds {
 		v, e := X.String(find)
 		if e {
 			*value = v
+			return
 		}
 	}
 }
 
-// Query the Args which start with find and return the result and true or "" and false
+// Start query the Args which start with find and return the result and true or "" and false
 func (X *Argp) Start(find string) (string, bool) {
 	for i, v := range X.Args {
 		if strings.HasPrefix(v, find) && len(v) > len(find) {
@@ -108,7 +112,7 @@ func (X *Argp) Start(find string) (string, bool) {
 	return "", false
 }
 
-// Return the Args after the "--"
+// Attach return the Args after the "--"
 func (X *Argp) Attach() []string {
 	after, at := X.After(At)
 	if at != -1 {
@@ -117,7 +121,7 @@ func (X *Argp) Attach() []string {
 	return after
 }
 
-// Return the Args after the "--", do not delete the Args
+// After return the Args after the "--", do not delete the Args
 func (X *Argp) After(attr string) ([]string, int) {
 	for i, v := range X.Args {
 		if v == attr && i+1 < len(X.Args) {
@@ -128,7 +132,7 @@ func (X *Argp) After(attr string) ([]string, int) {
 	return []string{}, -1
 }
 
-// Return the Args before the "--", do not delete the Args
+// Before return the Args before the "--", do not delete the Args
 func (X *Argp) Before(attr string) ([]string, int) {
 	for i, v := range X.Args {
 		if v == attr && i > 0 {
