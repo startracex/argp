@@ -32,57 +32,54 @@ func New() *Argp {
 }
 
 // Short separate short parameters into additional parameter lists based on short
-func (X *Argp) Short(short string) *Argp {
-	for i, v := range X.Args {
-		if strings.HasPrefix(v, short) && len(v) > len(short)+1 && v[len(short)] != short[0] {
-			X.Args = append(X.Args[:i], X.Args[i+1:]...)
-			for _, c := range v[len(short):] {
-				X.Args = append(X.Args, "-"+string(c))
+func (A *Argp) Short(short string) *Argp {
+	for i, arg := range A.Args {
+		shortLen := len(short)
+		if strings.HasPrefix(arg, short) && len(arg) > shortLen {
+			A.Remove(i, 1)
+			for _, c := range arg[shortLen:] {
+				A.Args = append(A.Args, short+string(c))
 			}
 		}
 	}
-	return X
+	return A
 }
 
 // Bool query finds in the Args and returns its existence
-func (X *Argp) Bool(finds ...string) bool {
+func (A *Argp) Bool(finds ...string) bool {
 	for _, find := range finds {
-		for i, v := range X.Args {
-			if v == find {
-				X.Args = append(X.Args[:i], X.Args[i+1:]...)
-				return true
-			}
+		i := A.IndexOf(find)
+		if i > -1 {
+			A.Remove(i, 1)
+			return true
+
 		}
 	}
 	return false
 }
 
 // BoolVar query finds in the Args and sets the exist result to value
-func (X *Argp) BoolVar(value *bool, finds ...string) {
-	for _, find := range finds {
-		*value = X.Bool(find)
-		if *value {
-			return
-		}
-	}
+func (A *Argp) BoolVar(value *bool, finds ...string) {
+	*value = A.Bool(finds...)
 }
 
 // String query finds in the Args and returns the result and true or "" and false
-func (X *Argp) String(finds ...string) (value string, exist bool) {
+func (A *Argp) String(finds ...string) (value string, exist bool) {
 	for _, find := range finds {
-		for i, v := range X.Args {
-			if v == find && i+1 < len(X.Args) {
-				// 删除相同值和之后的值
-				value = X.Args[i+1]
-				if value == Eq && i+2 < len(X.Args) {
-					value = X.Args[i+2]
-					X.Args = append(X.Args[:i], X.Args[i+1:]...)
+		for i, arg := range A.Args {
+			if arg == find && i+1 < len(A.Args) {
+				value = A.Args[i+1]
+				if value == Eq && i+2 < len(A.Args) {
+					value = A.Args[i+2]
+					A.Remove(i, 3)
+				} else {
+					A.Remove(i, 2)
 				}
-				X.Args = append(X.Args[:i], X.Args[i+2:]...)
 				return value, true
-			} else if strings.HasPrefix(v, find+Eq) && len(v) > len(find) {
-				value = v[len(find)+1:]
-				X.Args = append(X.Args[:i], X.Args[i+1:]...)
+			}
+			if strings.HasPrefix(arg, find+Eq) && len(arg) > len(find) {
+				value = arg[len(find)+1:]
+				A.Remove(i, 1)
 				return value, true
 			}
 		}
@@ -91,54 +88,88 @@ func (X *Argp) String(finds ...string) (value string, exist bool) {
 }
 
 // StringVar query finds in the Args and set the parsed result to value
-func (X *Argp) StringVar(value *string, finds ...string) {
-	for _, find := range finds {
-		v, e := X.String(find)
-		if e {
-			*value = v
-			return
-		}
+func (A *Argp) StringVar(value *string, finds ...string) {
+	s, exist := A.String(finds...)
+	if exist {
+		*value = s
+		return
 	}
 }
 
 // Start query the Args which start with find and return the result and true or "" and false
-func (X *Argp) Start(find string) (string, bool) {
-	for i, v := range X.Args {
-		if strings.HasPrefix(v, find) && len(v) > len(find) {
-			X.Args = append(X.Args[:i], X.Args[i+1:]...)
-			return v[strings.Index(v, find):], true
+func (A *Argp) Start(find string) (string, bool) {
+	for i, arg := range A.Args {
+		indexOf := strings.Index(arg, find)
+		if indexOf != -1 && len(arg) > len(find) {
+			A.Remove(i, 1)
+			return arg[indexOf:], true
 		}
 	}
 	return "", false
 }
 
-// Attach return the Args after the "--"
-func (X *Argp) Attach() []string {
-	after, at := X.After(At)
+// End query the Args which start with find and return the result and true or "" and false
+func (A *Argp) End(find string) (string, bool) {
+	for i, arg := range A.Args {
+		indexOf := strings.Index(arg, find)
+		if indexOf != -1 && len(arg) > len(find) {
+			A.Remove(i, 1)
+			return arg[:indexOf], true
+		}
+	}
+	return "", false
+
+}
+
+// Attach return the Args after the first At
+func (A *Argp) Attach() []string {
+	after, at := A.After(At)
 	if at != -1 {
-		X.Args = X.Args[:at]
+		A.Args = A.Args[:at]
 	}
 	return after
 }
 
-// After return the Args after the "--", do not delete the Args
-func (X *Argp) After(attr string) ([]string, int) {
-	for i, v := range X.Args {
-		if v == attr && i+1 < len(X.Args) {
-			value := X.Args[i+1:]
+// Before return the Args before the first attr and index of attr or -1, do not delete the Args
+func (A *Argp) Before(attr string) ([]string, int) {
+	for i, arg := range A.Args {
+		if arg == attr && i > 0 {
+			value := A.Args[:i]
 			return value, i
 		}
 	}
 	return []string{}, -1
 }
 
-// Before return the Args before the "--", do not delete the Args
-func (X *Argp) Before(attr string) ([]string, int) {
-	for i, v := range X.Args {
-		if v == attr && i > 0 {
-			value := X.Args[:i]
+// After return the Args after the first attr and index of attr or -1, do not delete the Args
+func (A *Argp) After(attr string) ([]string, int) {
+	for i, arg := range A.Args {
+		if arg == attr && i+1 < len(A.Args) {
+			value := A.Args[i+1:]
 			return value, i
 		}
 	}
 	return []string{}, -1
+}
+
+// Remove length elements from the index of Args
+func (A *Argp) Remove(index, length int) {
+	A.Args = append(A.Args[:index], A.Args[index+length:]...)
+}
+
+// IndexOf return index of find or -1
+func (A *Argp) IndexOf(find string) int {
+	return A.IndexOfFunc(find, func(arg string, find string) bool {
+		return arg == find
+	})
+}
+
+// IndexOfFunc return index of fn returns true or -1
+func (A *Argp) IndexOfFunc(find string, fn func(string, string) bool) int {
+	for i, arg := range A.Args {
+		if fn(arg, find) {
+			return i
+		}
+	}
+	return -1
 }
