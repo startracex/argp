@@ -96,25 +96,25 @@ func (A *Argp) StringVar(value *string, finds ...string) {
 	}
 }
 
-// Start query the Args which start with find and return the result and true or "" and false
+// Start query the Args which start with find and return the trimmed result and true or "" and false
 func (A *Argp) Start(find string) (string, bool) {
 	for i, arg := range A.Args {
-		indexOf := strings.Index(arg, find)
-		if indexOf != -1 && len(arg) > len(find) {
+		trimLen := len(find)
+		if len(arg) > len(find) && arg[:trimLen] == find {
 			A.Remove(i, 1)
-			return arg[indexOf:], true
+			return arg[trimLen:], true
 		}
 	}
 	return "", false
 }
 
-// End query the Args which start with find and return the result and true or "" and false
+// End query the Args which end with find and return the trimmed result and true or "" and false
 func (A *Argp) End(find string) (string, bool) {
 	for i, arg := range A.Args {
-		indexOf := strings.Index(arg, find)
-		if indexOf != -1 && len(arg) > len(find) {
+		trimLen := len(arg) - len(find)
+		if len(arg) > len(find) && arg[trimLen:] == find {
 			A.Remove(i, 1)
-			return arg[:indexOf], true
+			return arg[:trimLen], true
 		}
 	}
 	return "", false
