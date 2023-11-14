@@ -33,9 +33,9 @@ func New() *Argp {
 
 // Short separate short parameters into additional parameter lists based on short
 func (A *Argp) Short(short string) *Argp {
+	shortLen := len(short)
 	for i, arg := range A.Args {
-		shortLen := len(short)
-		if strings.HasPrefix(arg, short) && len(arg) > shortLen {
+		if len(arg) > shortLen && arg[0:shortLen] == short && !strings.Contains(arg[shortLen:], short) {
 			A.Remove(i, 1)
 			for _, c := range arg[shortLen:] {
 				A.Args = append(A.Args, short+string(c))
