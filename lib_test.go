@@ -21,7 +21,7 @@ func Test_Common(t *testing.T) {
 	// "2" true // Query "b", (remove "b=2" from Args).
 	t.Log(ap.String("b"))
 
-	// ["abc", "-xyz"] "1" // After "--".
+	// ["abc", "-xyz"] 1 // After "--".
 	t.Log(ap.After("--"))
 
 	// ["--fo", "--", "abc", "-x", "-y", "-z"] Separated by - "-", (remove -xyz from Args).

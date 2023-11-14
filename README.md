@@ -26,7 +26,7 @@ ap.String("a")
 // "2" true // Query "b", (remove "b=2" from Args).
 ap.String("b")
 
-// ["abc", "-xyz"] "1" // After "--".
+// ["abc", "-xyz"] 1 // After "--".
 ap.After("--")
 
 // ["--fo", "--", "abc", "-x", "-y", "-z"] Separated by - "-", (remove -xyz from Args).
